@@ -996,6 +996,10 @@ const WgpDetails *getPascalWgpDetails() {
 
 std::optional<TargetDetails> getNVIDIAGPUTargetDetails(StringRef target) {
   const WgpDetails *ampereWgp = getAmpereWgpDetails();
+  // TODO: Model Blackwell-specific capabilities once IREE has target details
+  // for the architecture. Reuse the existing NVIDIA capability model for now
+  // so canonical CUDA targets such as sm_120 can be represented.
+  const WgpDetails *blackwellWgp = ampereWgp;
   const WgpDetails *turingWgp = getTuringWgpDetails();
   const WgpDetails *voltaWgp = getVoltaWgpDetails();
   const WgpDetails *pascalWgp = getPascalWgpDetails();
@@ -1026,6 +1030,7 @@ std::optional<TargetDetails> getNVIDIAGPUTargetDetails(StringRef target) {
       .Case("rtx3070ti", TargetDetails{ampereWgp, &rtx3070tiChip})
       // https://www.techpowerup.com/gpu-specs/geforce-rtx-3070.c3674
       .Case("rtx3070", TargetDetails{ampereWgp, &rtx3070Chip})
+      .Cases({"blackwell", "sm_120"}, TargetDetails{blackwellWgp, nullptr})
       .Cases({"ampere", "sm_80", "sm_86", "sm_87"},
              TargetDetails{ampereWgp, nullptr})
       .Cases({"turing", "sm_75"}, TargetDetails{turingWgp, nullptr})
@@ -1052,6 +1057,7 @@ StringRef normalizeNVIDIAGPUTarget(StringRef target) {
 
   return llvm::StringSwitch<StringRef>(target.lower())
       .Case("a100", "sm_80")
+      .Case("blackwell", "sm_120")
       .Case("ampere", "sm_80") // Or sm_86/87; use smaller version.
       .Case("turing", "sm_75")
       .Case("volta", "sm_70")  // Or sm_72; use smaller version.
