@@ -1623,6 +1623,42 @@ static constexpr ArchSeedSet kCDNA4Seeds = {
     },
 };
 
+/// RDNA3 seeds.
+///
+/// TODO: These values are currently identical to kDefaultSeeds and have not
+/// yet been validated against real RDNA3 hardware benchmarks. RDNA3
+/// (gfx1100/1101/1102/1103/1150/1151) previously fell through to
+/// kDefaultSeeds, whose own comment ("Default seeds (CDNA and other
+/// architectures)") indicates it was tuned with CDNA in mind, not RDNA3. This
+/// placeholder table exists so that RDNA3 has its own dedicated seed set to
+/// tune independently of kDefaultSeeds, once benchmarking data is available
+/// (see discussion in the PR introducing this table). In particular, RDNA3
+/// APU targets (e.g. gfx1150/gfx1151, "Strix Point"/"Strix Halo") share
+/// system memory and have different bandwidth/latency characteristics than
+/// RDNA3 discrete GPUs (gfx1100/1101/1102/1103), so seed tuning informed by
+/// benchmarks on one may not transfer to the other; this is called out here
+/// so it isn't lost when the placeholder values below are updated.
+static constexpr ArchSeedSet kRDNA3Seeds = {
+    /*gemm=*/{
+        /*SmallGemm=*/     {2, 2,  4, 2 * kCacheLineSizeBits},
+        /*MediumGemm=*/    {4, 8,  4, 2 * kCacheLineSizeBits},
+        /*LargeGemm=*/     {4, 16, 2, kCacheLineSizeBits / 2},
+        /*VeryLargeGemm=*/ {4, 16, 2, kCacheLineSizeBits / 2},
+    },
+    /*scaledGemm=*/{
+        /*SmallGemm=*/     {2, 2,  4, 2 * kCacheLineSizeBits},
+        /*MediumGemm=*/    {8, 32, 4, kCacheLineSizeBits / 2},
+        /*LargeGemm=*/     {8, 32, 2, kCacheLineSizeBits / 2},
+        /*VeryLargeGemm=*/ {8, 32, 2, kCacheLineSizeBits / 2},
+    },
+    /*conv=*/{
+        /*SmallGemm=*/     {2, 2,  4, kCacheLineSizeBits},
+        /*MediumGemm=*/    {8, 4,  4, 2 * kCacheLineSizeBits},
+        /*LargeGemm=*/     {8, 8,  2, kCacheLineSizeBits / 2},
+        /*VeryLargeGemm=*/ {8, 8,  2, kCacheLineSizeBits / 2},
+    },
+};
+
 /// RDNA4 seeds (tuned based on RX 9070 XT benchmarking data).
 static constexpr ArchSeedSet kRDNA4Seeds = {
     /*gemm=*/{
@@ -1669,6 +1705,13 @@ const ArchSeedSet &getArchSeedSet(TargetAttr target) {
                  chipset->minorVersion <= 1;
   if (isRDNA4 || arch == "rdna4") {
     return kRDNA4Seeds;
+  }
+
+  // RDNA3 is gfx11xx (major=11): covers discrete GPUs (gfx1100/1101/1102/
+  // 1103) as well as APUs (gfx1150 "Strix Point", gfx1151 "Strix Halo").
+  bool isRDNA3 = succeeded(chipset) && chipset->majorVersion == 11;
+  if (isRDNA3 || arch == "rdna3") {
+    return kRDNA3Seeds;
   }
   return kDefaultSeeds;
 }
